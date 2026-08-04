@@ -1,0 +1,24 @@
+[project]
+name = "transaction-etl"
+version = "0.1.0"
+description = "Daily batch ETL pipeline for transaction files on Databricks (medallion architecture)"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    # 4.0.3+ required: SPARK-53759 (worker crash on Windows with Python 3.12+)
+    "pyspark==4.0.3",
+    "pytest==9.1.1",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
