@@ -1,0 +1,23 @@
+# Databricks Asset Bundle definition.
+# `databricks bundle deploy` syncs this project (notebooks + src) into the
+# workspace and creates/updates the job defined under resources/.
+bundle:
+  name: transaction-etl
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    description: Unity Catalog catalog for all pipeline tables
+    default: workspace
+  schema:
+    description: Schema (database) for all pipeline tables
+    default: transactions
+
+targets:
+  dev:
+    default: true
+    mode: development
+    workspace:
+      host: https://dbc-05f93f23-883e.cloud.databricks.com

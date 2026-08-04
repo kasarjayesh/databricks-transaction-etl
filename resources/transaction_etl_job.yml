@@ -1,0 +1,49 @@
+# The daily ETL job: setup -> bronze -> silver -> gold.
+# No cluster is specified, so tasks run on serverless compute (the only option
+# on Free Edition, and the zero-maintenance option everywhere else).
+resources:
+  jobs:
+    transaction_etl_daily:
+      name: transaction-etl-daily
+
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+        - name: file_date
+          default: ""  # empty = today; set explicitly to (re)process a given day
+
+      schedule:
+        # Every day at 06:00 UTC; paused so the demo workspace never runs
+        # unattended - unpause for production use.
+        quartz_cron_expression: "0 0 6 * * ?"
+        timezone_id: UTC
+        pause_status: PAUSED
+
+      email_notifications:
+        on_failure:
+          - kasarjayesh27@gmail.com
+
+      tasks:
+        - task_key: setup
+          notebook_task:
+            notebook_path: ../notebooks/00_setup.py
+
+        - task_key: bronze_ingest
+          depends_on:
+            - task_key: setup
+          notebook_task:
+            notebook_path: ../notebooks/01_bronze_ingest.py
+
+        - task_key: silver_transform
+          depends_on:
+            - task_key: bronze_ingest
+          notebook_task:
+            notebook_path: ../notebooks/02_silver_transform.py
+
+        - task_key: gold_aggregates
+          depends_on:
+            - task_key: silver_transform
+          notebook_task:
+            notebook_path: ../notebooks/03_gold_aggregates.py
