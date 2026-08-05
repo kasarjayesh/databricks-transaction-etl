@@ -85,7 +85,8 @@ Defined in [`src/transaction_etl/quality.py`](src/transaction_etl/quality.py):
 On the sample file: 100,001 rows in, 0 quarantined; warnings found: 2,222
 invalid age bands, 14 missing countries, 2 duplicate transaction ids.
 
-Every stage writes row counts to `etl_run_log`, charted on the dashboard's
+Every stage writes row counts to `etl_run_log` (queryable via SQL for run
+history), and quality metrics are charted on the dashboard's
 Data Quality & Operations page — volume anomalies and quality regressions are
 visible per run, and the job emails on failure.
 
@@ -152,7 +153,7 @@ Dashboard conventions:
 | **Maintainability** | All rules in one unit-tested package (single place to change, tests catch regressions); source facts as named constants in `schema.py`; environment specifics as bundle variables; pinned dependencies with reasons; raw bronze preserved so silver can always be rebuilt after a rule change. |
 | **Readability** | One named function per mapping rule with named conditions (`is_pre_brexit_gbr`); thin notebooks that only orchestrate; gold as plain SQL reviewable by analysts; comments explain *why*, docstrings record assumptions. |
 | **Performance** | No Python UDFs — native Catalyst column expressions only; explicit schema (no inference); `FILE_DATE` partitioning with pruning; `replaceWhere` touches one partition per write; dashboard reads small gold aggregates, never silver detail; exact `DECIMAL` types. |
-| **Monitoring** | `etl_run_log` audit table (rows in/out/quarantined per stage per run) charted on the dashboard's DQ page; issue counts by type; email on job failure; fail-fast guard when bronze is empty. |
+| **Monitoring** | `etl_run_log` audit table (rows in/out/quarantined per stage per run, queryable for run history); data-quality issue counts charted on the dashboard's DQ page; email on job failure; fail-fast guard when bronze is empty. |
 | **Development time** | Local pytest suite (~30 s feedback, no cloud needed); one-command bundle deploy; serverless compute (zero cluster admin); data profiled before design, so no rework from surprises. |
 | **Future data patterns** | All-string bronze (nothing can fail ingestion); `try_` parsing; quarantine-with-reasons instead of dropping; warning rules as drift detectors (invalid bands, duplicate ids, future dates, missing country); total `otherwise` fallbacks for unseen values; original description preserved; documented growth path (Auto Loader, liquid clustering, incremental gold). |
 

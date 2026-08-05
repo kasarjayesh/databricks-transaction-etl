@@ -138,15 +138,6 @@
       ]
     },
     {
-      "name": "ds_run_log",
-      "displayName": "Pipeline run log",
-      "queryLines": [
-        "SELECT run_ts, stage, file_date, rows_in, rows_out, rows_quarantined, notes\n",
-        "FROM workspace.transactions.etl_run_log\n",
-        "ORDER BY run_ts DESC\n"
-      ]
-    },
-    {
       "name": "ds_dq_issues",
       "displayName": "Data-quality issues",
       "queryLines": [
@@ -1233,96 +1224,6 @@
             "x": 2,
             "y": 0,
             "width": 4,
-            "height": 6
-          }
-        },
-        {
-          "widget": {
-            "name": "w_run_log",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "ds_run_log",
-                  "fields": [
-                    {
-                      "name": "run_ts",
-                      "expression": "`run_ts`"
-                    },
-                    {
-                      "name": "stage",
-                      "expression": "`stage`"
-                    },
-                    {
-                      "name": "file_date",
-                      "expression": "`file_date`"
-                    },
-                    {
-                      "name": "rows_in",
-                      "expression": "`rows_in`"
-                    },
-                    {
-                      "name": "rows_out",
-                      "expression": "`rows_out`"
-                    },
-                    {
-                      "name": "rows_quarantined",
-                      "expression": "`rows_quarantined`"
-                    },
-                    {
-                      "name": "notes",
-                      "expression": "`notes`"
-                    }
-                  ],
-                  "disaggregated": true
-                }
-              }
-            ],
-            "spec": {
-              "version": 1,
-              "widgetType": "table",
-              "frame": {
-                "showTitle": true,
-                "title": "Pipeline run log"
-              },
-              "encodings": {
-                "columns": [
-                  {
-                    "fieldName": "run_ts",
-                    "displayName": "Run (UTC)"
-                  },
-                  {
-                    "fieldName": "stage",
-                    "displayName": "Stage"
-                  },
-                  {
-                    "fieldName": "file_date",
-                    "displayName": "File date"
-                  },
-                  {
-                    "fieldName": "rows_in",
-                    "displayName": "Rows in"
-                  },
-                  {
-                    "fieldName": "rows_out",
-                    "displayName": "Rows out"
-                  },
-                  {
-                    "fieldName": "rows_quarantined",
-                    "displayName": "Quarantined"
-                  },
-                  {
-                    "fieldName": "notes",
-                    "displayName": "Notes"
-                  }
-                ]
-              }
-            }
-          },
-          "position": {
-            "x": 0,
-            "y": 6,
-            "width": 6,
             "height": 6
           }
         }
