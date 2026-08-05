@@ -10,8 +10,8 @@ code is identical on Azure Databricks.
 ## Architecture
 
 Medallion (Bronze → Silver → Gold) on Delta Lake, orchestrated by a Databricks
-Workflows job, deployed as a **Databricks Asset Bundle** (everything in this
-repo — notebooks, package, job, dashboard — deploys with one CLI command).
+Workflows job, deployed as a **Databricks Asset Bundle**: everything in this
+repo (notebooks, package, job, dashboard) deploys with one CLI command.
 
 ```mermaid
 flowchart LR
@@ -26,7 +26,7 @@ flowchart LR
 ```
 
 - **Bronze** (`notebooks/01_bronze_ingest.py`): lands the file exactly as
-  received — every column a string, so ingestion never fails on bad values.
+  received, every column a string, so ingestion never fails on bad values.
   Adds `FILE_DATE`, source filename and ingestion timestamp.
 - **Silver** (`notebooks/02_silver_transform.py`): applies the full field
   mapping, then splits rows into clean (kept, with warning tags) and
@@ -37,7 +37,7 @@ flowchart LR
 
 All transformation logic lives in a plain, unit-tested Python package
 (`src/transaction_etl/`); the notebooks are thin orchestration wrappers. No
-Python UDFs — every rule is a native Spark column expression.
+Python UDFs: every rule is a native Spark column expression.
 
 ## Repository layout
 
@@ -87,7 +87,7 @@ invalid age bands, 14 missing countries, 2 duplicate transaction ids.
 
 Every stage writes row counts to `etl_run_log` (queryable via SQL for run
 history), and quality metrics are charted on the dashboard's
-Data Quality & Operations page — volume anomalies and quality regressions are
+Data Quality & Operations page, so volume anomalies and quality regressions are
 visible per run, and the job emails on failure.
 
 ## Setup
@@ -131,7 +131,7 @@ The job (setup → bronze → silver → gold) has a daily 06:00 UTC schedule,
 deliberately **paused** in this demo; unpause for production. Re-running a
 `file_date` is idempotent: `replaceWhere` on the partition replaces that day.
 
-The dashboard deploys as a draft named "Transaction Analytics" — open it under
+The dashboard deploys as a draft named "Transaction Analytics"; open it under
 **Dashboards** and publish. Screenshots in [docs/screenshots](docs/screenshots).
 
 Dashboard conventions:
@@ -152,7 +152,7 @@ Dashboard conventions:
 |---|---|
 | **Maintainability** | All rules in one unit-tested package (single place to change, tests catch regressions); source facts as named constants in `schema.py`; environment specifics as bundle variables; pinned dependencies with reasons; raw bronze preserved so silver can always be rebuilt after a rule change. |
 | **Readability** | One named function per mapping rule with named conditions (`is_pre_brexit_gbr`); thin notebooks that only orchestrate; gold as plain SQL reviewable by analysts; comments explain *why*, docstrings record assumptions. |
-| **Performance** | No Python UDFs — native Catalyst column expressions only; explicit schema (no inference); `FILE_DATE` partitioning with pruning; `replaceWhere` touches one partition per write; dashboard reads small gold aggregates, never silver detail; exact `DECIMAL` types. |
+| **Performance** | No Python UDFs (native Catalyst column expressions only); explicit schema (no inference); `FILE_DATE` partitioning with pruning; `replaceWhere` touches one partition per write; dashboard reads small gold aggregates, never silver detail; exact `DECIMAL` types. |
 | **Monitoring** | `etl_run_log` audit table (rows in/out/quarantined per stage per run, queryable for run history); data-quality issue counts charted on the dashboard's DQ page; email on job failure; fail-fast guard when bronze is empty. |
 | **Development time** | Local pytest suite (~30 s feedback, no cloud needed); one-command bundle deploy; serverless compute (zero cluster admin); data profiled before design, so no rework from surprises. |
 | **Future data patterns** | All-string bronze (nothing can fail ingestion); `try_` parsing; quarantine-with-reasons instead of dropping; warning rules as drift detectors (invalid bands, duplicate ids, future dates, missing country); total `otherwise` fallbacks for unseen values; original description preserved; documented growth path (Auto Loader, liquid clustering, incremental gold). |
@@ -168,7 +168,7 @@ Dashboard conventions:
   `try_to_timestamp`/`try_cast` convert bad values to NULLs handled by DQ.
 - **Partition by `FILE_DATE`** with `replaceWhere` for idempotent daily loads.
 - **Asset Bundle**: the whole solution (job, schedule, notifications,
-  dashboard) is declarative config in Git — reproducible in any workspace.
+  dashboard) is declarative config in Git, reproducible in any workspace.
 
 ## Limitations & future improvements
 
