@@ -14,6 +14,9 @@ variables:
   schema:
     description: Schema (database) for all pipeline tables
     default: transactions
+  warehouse_id:
+    description: SQL warehouse that runs the dashboard queries
+    default: c14557ce85c326fd  # Serverless Starter Warehouse
 
 targets:
   dev:

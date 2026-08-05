@@ -148,13 +148,16 @@ gold_tables = [
     "gold_dq_summary",
 ]
 total = sum(spark.table(f"{fqn}.{t}").count() for t in gold_tables)
+# Gold rebuilds from the WHOLE silver table (not just this file_date), so
+# rows_in is the full silver row count feeding the aggregation.
+silver_rows = spark.table(f"{fqn}.silver_transactions").count()
 log_run(
     spark,
     f"{catalog}.{schema}.etl_run_log",
     "gold",
     file_date,
-    rows_in=0,
+    rows_in=silver_rows,
     rows_out=total,
-    notes=f"rebuilt {len(gold_tables)} gold tables",
+    notes=f"rebuilt {len(gold_tables)} gold tables from full silver",
 )
 print(f"Gold complete: {len(gold_tables)} tables, {total} aggregate rows")

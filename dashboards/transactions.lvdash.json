@@ -1,0 +1,1332 @@
+{
+  "datasets": [
+    {
+      "name": "ds_totals",
+      "displayName": "Overall totals",
+      "queryLines": [
+        "SELECT COUNT(*) AS txn_count,\n",
+        "       SUM(TRANSACTION_AMOUNT) AS total_amount,\n",
+        "       COUNT(DISTINCT CUSTOMER_KEY) AS customer_count,\n",
+        "       ROUND(SUM(TRANSACTION_AMOUNT) / COUNT(*), 2) AS avg_txn_value\n",
+        "FROM workspace.transactions.silver_transactions\n"
+      ]
+    },
+    {
+      "name": "ds_daily",
+      "displayName": "Daily spend",
+      "queryLines": [
+        "SELECT TRANSACTION_DATE, 'Spend (£)' AS series, total_amount\n",
+        "FROM workspace.transactions.gold_daily_summary\n",
+        "ORDER BY TRANSACTION_DATE\n"
+      ]
+    },
+    {
+      "name": "ds_monthly_yoy",
+      "displayName": "Monthly spend by year",
+      "queryLines": [
+        "SELECT concat(lpad(cast(month(TRANSACTION_DATE) AS string), 2, '0'),\n",
+        "              ' ', date_format(TRANSACTION_DATE, 'MMM')) AS month_label,\n",
+        "       cast(year(TRANSACTION_DATE) AS string) AS yr,\n",
+        "       SUM(total_amount) AS total_amount\n",
+        "FROM workspace.transactions.gold_daily_summary\n",
+        "GROUP BY month_label, yr\n",
+        "ORDER BY month_label, yr\n"
+      ]
+    },
+    {
+      "name": "ds_eu_share_monthly",
+      "displayName": "EU share of spend by month",
+      "queryLines": [
+        "SELECT date_trunc('MONTH', TRANSACTION_DATE) AS month,\n",
+        "       'EU share (%)' AS series,\n",
+        "       ROUND(100 * SUM(eu_amount) / SUM(total_amount), 1) AS eu_share_pct\n",
+        "FROM workspace.transactions.gold_daily_summary\n",
+        "GROUP BY month\n",
+        "ORDER BY month\n"
+      ]
+    },
+    {
+      "name": "ds_day_of_week",
+      "displayName": "Average daily spend by weekday",
+      "queryLines": [
+        "SELECT concat(weekday(TRANSACTION_DATE) + 1, ' ',\n",
+        "              date_format(TRANSACTION_DATE, 'E')) AS weekday_label,\n",
+        "       'Avg daily spend (£)' AS series,\n",
+        "       ROUND(AVG(total_amount), 2) AS avg_daily_spend\n",
+        "FROM workspace.transactions.gold_daily_summary\n",
+        "GROUP BY weekday_label\n",
+        "ORDER BY weekday_label\n"
+      ]
+    },
+    {
+      "name": "ds_atv_monthly",
+      "displayName": "Average transaction value by month",
+      "queryLines": [
+        "SELECT date_trunc('MONTH', TRANSACTION_DATE) AS month,\n",
+        "       'Avg txn value (£)' AS series,\n",
+        "       ROUND(SUM(total_amount) / SUM(txn_count), 2) AS avg_txn_value\n",
+        "FROM workspace.transactions.gold_daily_summary\n",
+        "GROUP BY month\n",
+        "ORDER BY month\n"
+      ]
+    },
+    {
+      "name": "ds_eu_split",
+      "displayName": "EU split",
+      "queryLines": [
+        "SELECT CASE WHEN EU_FLAG THEN 'EU' ELSE 'Non-EU' END AS region,\n",
+        "       SUM(total_amount) AS total_amount\n",
+        "FROM workspace.transactions.gold_country_summary\n",
+        "GROUP BY 1\n"
+      ]
+    },
+    {
+      "name": "ds_countries",
+      "displayName": "Top countries",
+      "queryLines": [
+        "SELECT COUNTRY_CODE, 'Transactions' AS series,\n",
+        "       SUM(txn_count) AS txn_count, SUM(total_amount) AS total_amount\n",
+        "FROM workspace.transactions.gold_country_summary\n",
+        "GROUP BY COUNTRY_CODE\n",
+        "ORDER BY txn_count DESC\n",
+        "LIMIT 10\n"
+      ]
+    },
+    {
+      "name": "ds_merchants",
+      "displayName": "Merchant share of spend",
+      "queryLines": [
+        "SELECT DESCRIPTION_TEXT, 'Share of spend (%)' AS series, txn_count, total_amount,\n",
+        "       ROUND(100 * total_amount / SUM(total_amount) OVER (), 2) AS spend_share_pct\n",
+        "FROM workspace.transactions.gold_merchant_summary\n",
+        "ORDER BY total_amount DESC\n",
+        "LIMIT 10\n"
+      ]
+    },
+    {
+      "name": "ds_segments",
+      "displayName": "Spend by age band and gender",
+      "queryLines": [
+        "SELECT AGE_BAND, GENDER_CODE, SUM(total_amount) AS total_amount\n",
+        "FROM workspace.transactions.gold_customer_segments\n",
+        "WHERE AGE_BAND IN ('<30','30-39','40-49','50-59','60-69','>=70')\n",
+        "GROUP BY AGE_BAND, GENDER_CODE\n",
+        "ORDER BY AGE_BAND\n"
+      ]
+    },
+    {
+      "name": "ds_spend_per_customer",
+      "displayName": "Spend per customer by age band",
+      "queryLines": [
+        "SELECT AGE_BAND, 'Spend per customer (£)' AS series,\n",
+        "       ROUND(SUM(TRANSACTION_AMOUNT) / COUNT(DISTINCT CUSTOMER_KEY), 2)\n",
+        "         AS spend_per_customer\n",
+        "FROM workspace.transactions.silver_transactions\n",
+        "WHERE AGE_BAND IN ('<30','30-39','40-49','50-59','60-69','>=70')\n",
+        "GROUP BY AGE_BAND\n",
+        "ORDER BY AGE_BAND\n"
+      ]
+    },
+    {
+      "name": "ds_customer_type",
+      "displayName": "Spend by customer type",
+      "queryLines": [
+        "SELECT CUSTOMER_TYPE, 'Spend (£)' AS series, SUM(total_amount) AS total_amount\n",
+        "FROM workspace.transactions.gold_customer_segments\n",
+        "GROUP BY CUSTOMER_TYPE\n",
+        "ORDER BY total_amount DESC\n"
+      ]
+    },
+    {
+      "name": "ds_run_log",
+      "displayName": "Pipeline run log",
+      "queryLines": [
+        "SELECT run_ts, stage, file_date, rows_in, rows_out, rows_quarantined, notes\n",
+        "FROM workspace.transactions.etl_run_log\n",
+        "ORDER BY run_ts DESC\n"
+      ]
+    },
+    {
+      "name": "ds_dq_issues",
+      "displayName": "Data-quality issues",
+      "queryLines": [
+        "SELECT FILE_DATE, issue, severity, cnt\n",
+        "FROM workspace.transactions.gold_dq_summary\n",
+        "ORDER BY cnt DESC\n"
+      ]
+    },
+    {
+      "name": "ds_quarantine",
+      "displayName": "Quarantine count",
+      "queryLines": [
+        "SELECT COUNT(*) AS quarantined_rows\n",
+        "FROM workspace.transactions.quarantine_transactions\n"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "page_overview",
+      "displayName": "Overview",
+      "layout": [
+        {
+          "widget": {
+            "name": "w_txn_count",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_totals",
+                  "fields": [
+                    {
+                      "name": "txn_count",
+                      "expression": "`txn_count`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "frame": {
+                "showTitle": true,
+                "title": "Transactions"
+              },
+              "encodings": {
+                "value": {
+                  "fieldName": "txn_count",
+                  "displayName": "Transactions"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "w_total_amount",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_totals",
+                  "fields": [
+                    {
+                      "name": "total_amount",
+                      "expression": "`total_amount`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "frame": {
+                "showTitle": true,
+                "title": "Total spend (£)"
+              },
+              "encodings": {
+                "value": {
+                  "fieldName": "total_amount",
+                  "displayName": "Total spend (£)"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 0,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "w_customer_count",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_totals",
+                  "fields": [
+                    {
+                      "name": "customer_count",
+                      "expression": "`customer_count`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "frame": {
+                "showTitle": true,
+                "title": "Customers"
+              },
+              "encodings": {
+                "value": {
+                  "fieldName": "customer_count",
+                  "displayName": "Customers"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 0,
+            "width": 1,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "w_avg_txn",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_totals",
+                  "fields": [
+                    {
+                      "name": "avg_txn_value",
+                      "expression": "`avg_txn_value`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "frame": {
+                "showTitle": true,
+                "title": "Avg txn (£)"
+              },
+              "encodings": {
+                "value": {
+                  "fieldName": "avg_txn_value",
+                  "displayName": "Avg txn (£)"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 5,
+            "y": 0,
+            "width": 1,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "w_monthly_yoy",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_monthly_yoy",
+                  "fields": [
+                    {
+                      "name": "month_label",
+                      "expression": "`month_label`"
+                    },
+                    {
+                      "name": "yr",
+                      "expression": "`yr`"
+                    },
+                    {
+                      "name": "total_amount",
+                      "expression": "`total_amount`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "frame": {
+                "showTitle": true,
+                "title": "Monthly spend: 2019 vs 2020 (£)"
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "month_label",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Month"
+                },
+                "y": {
+                  "fieldName": "total_amount",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Spend (£)"
+                },
+                "color": {
+                  "fieldName": "yr",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "2019",
+                        "color": "#ABB8C3"
+                      },
+                      {
+                        "value": "2020",
+                        "color": "#FF6600"
+                      }
+                    ]
+                  },
+                  "displayName": ""
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 3,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "w_daily_trend",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_daily",
+                  "fields": [
+                    {
+                      "name": "TRANSACTION_DATE",
+                      "expression": "`TRANSACTION_DATE`"
+                    },
+                    {
+                      "name": "series",
+                      "expression": "`series`"
+                    },
+                    {
+                      "name": "total_amount",
+                      "expression": "`total_amount`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "frame": {
+                "showTitle": true,
+                "title": "Daily spend (£)"
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "TRANSACTION_DATE",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Transaction date"
+                },
+                "y": {
+                  "fieldName": "total_amount",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Spend (£)"
+                },
+                "color": {
+                  "fieldName": "series",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "Spend (£)",
+                        "color": "#FF6600"
+                      }
+                    ]
+                  },
+                  "displayName": ""
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 9,
+            "width": 4,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "w_eu_split",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_eu_split",
+                  "fields": [
+                    {
+                      "name": "region",
+                      "expression": "`region`"
+                    },
+                    {
+                      "name": "total_amount",
+                      "expression": "`total_amount`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "pie",
+              "frame": {
+                "showTitle": true,
+                "title": "Spend: EU vs non-EU (£)"
+              },
+              "encodings": {
+                "angle": {
+                  "fieldName": "total_amount",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Spend (£)"
+                },
+                "color": {
+                  "fieldName": "region",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "EU",
+                        "color": "#FF6600"
+                      },
+                      {
+                        "value": "Non-EU",
+                        "color": "#4E8FD1"
+                      }
+                    ]
+                  },
+                  "displayName": "Region"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 9,
+            "width": 2,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "w_eu_share",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_eu_share_monthly",
+                  "fields": [
+                    {
+                      "name": "month",
+                      "expression": "`month`"
+                    },
+                    {
+                      "name": "series",
+                      "expression": "`series`"
+                    },
+                    {
+                      "name": "eu_share_pct",
+                      "expression": "`eu_share_pct`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "frame": {
+                "showTitle": true,
+                "title": "EU share of spend by month (%) - Brexit cutoff visible"
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "month",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Month"
+                },
+                "y": {
+                  "fieldName": "eu_share_pct",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "EU share (%)"
+                },
+                "color": {
+                  "fieldName": "series",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "EU share (%)",
+                        "color": "#4E8FD1"
+                      }
+                    ]
+                  },
+                  "displayName": ""
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 15,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "w_day_of_week",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_day_of_week",
+                  "fields": [
+                    {
+                      "name": "weekday_label",
+                      "expression": "`weekday_label`"
+                    },
+                    {
+                      "name": "series",
+                      "expression": "`series`"
+                    },
+                    {
+                      "name": "avg_daily_spend",
+                      "expression": "`avg_daily_spend`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "frame": {
+                "showTitle": true,
+                "title": "Avg daily spend by weekday (£)"
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "weekday_label",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Weekday (1=Mon)"
+                },
+                "y": {
+                  "fieldName": "avg_daily_spend",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Avg daily spend (£)"
+                },
+                "color": {
+                  "fieldName": "series",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "Avg daily spend (£)",
+                        "color": "#FF6600"
+                      }
+                    ]
+                  },
+                  "displayName": ""
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 15,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "w_merchants",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_merchants",
+                  "fields": [
+                    {
+                      "name": "DESCRIPTION_TEXT",
+                      "expression": "`DESCRIPTION_TEXT`"
+                    },
+                    {
+                      "name": "series",
+                      "expression": "`series`"
+                    },
+                    {
+                      "name": "spend_share_pct",
+                      "expression": "`spend_share_pct`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "frame": {
+                "showTitle": true,
+                "title": "Top merchants by share of spend (%)"
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "spend_share_pct",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Share of total spend (%)"
+                },
+                "y": {
+                  "fieldName": "DESCRIPTION_TEXT",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Merchant"
+                },
+                "color": {
+                  "fieldName": "series",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "Share of spend (%)",
+                        "color": "#FF6600"
+                      }
+                    ]
+                  },
+                  "displayName": ""
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 21,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "w_countries",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_countries",
+                  "fields": [
+                    {
+                      "name": "COUNTRY_CODE",
+                      "expression": "`COUNTRY_CODE`"
+                    },
+                    {
+                      "name": "series",
+                      "expression": "`series`"
+                    },
+                    {
+                      "name": "txn_count",
+                      "expression": "`txn_count`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "frame": {
+                "showTitle": true,
+                "title": "Transactions by country (top 10)"
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "COUNTRY_CODE",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Country"
+                },
+                "y": {
+                  "fieldName": "txn_count",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Transactions"
+                },
+                "color": {
+                  "fieldName": "series",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "Transactions",
+                        "color": "#4E8FD1"
+                      }
+                    ]
+                  },
+                  "displayName": ""
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 21,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "w_segments",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_segments",
+                  "fields": [
+                    {
+                      "name": "AGE_BAND",
+                      "expression": "`AGE_BAND`"
+                    },
+                    {
+                      "name": "GENDER_CODE",
+                      "expression": "`GENDER_CODE`"
+                    },
+                    {
+                      "name": "total_amount",
+                      "expression": "`total_amount`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "frame": {
+                "showTitle": true,
+                "title": "Spend by age band and gender (£)"
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "AGE_BAND",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Age band"
+                },
+                "y": {
+                  "fieldName": "total_amount",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Spend (£)"
+                },
+                "color": {
+                  "fieldName": "GENDER_CODE",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "F",
+                        "color": "#FF6600"
+                      },
+                      {
+                        "value": "M",
+                        "color": "#4E8FD1"
+                      },
+                      {
+                        "value": "X",
+                        "color": "#ABB8C3"
+                      }
+                    ]
+                  },
+                  "displayName": ""
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 27,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "w_spend_per_customer",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_spend_per_customer",
+                  "fields": [
+                    {
+                      "name": "AGE_BAND",
+                      "expression": "`AGE_BAND`"
+                    },
+                    {
+                      "name": "series",
+                      "expression": "`series`"
+                    },
+                    {
+                      "name": "spend_per_customer",
+                      "expression": "`spend_per_customer`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "frame": {
+                "showTitle": true,
+                "title": "Spend per customer by age band (£)"
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "AGE_BAND",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Age band"
+                },
+                "y": {
+                  "fieldName": "spend_per_customer",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Spend per customer (£)"
+                },
+                "color": {
+                  "fieldName": "series",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "Spend per customer (£)",
+                        "color": "#FF6600"
+                      }
+                    ]
+                  },
+                  "displayName": ""
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 27,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "w_atv_monthly",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_atv_monthly",
+                  "fields": [
+                    {
+                      "name": "month",
+                      "expression": "`month`"
+                    },
+                    {
+                      "name": "series",
+                      "expression": "`series`"
+                    },
+                    {
+                      "name": "avg_txn_value",
+                      "expression": "`avg_txn_value`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "frame": {
+                "showTitle": true,
+                "title": "Avg transaction value by month (£)"
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "month",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Month"
+                },
+                "y": {
+                  "fieldName": "avg_txn_value",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Avg txn value (£)"
+                },
+                "color": {
+                  "fieldName": "series",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "Avg txn value (£)",
+                        "color": "#4E8FD1"
+                      }
+                    ]
+                  },
+                  "displayName": ""
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 33,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "w_customer_type",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_customer_type",
+                  "fields": [
+                    {
+                      "name": "CUSTOMER_TYPE",
+                      "expression": "`CUSTOMER_TYPE`"
+                    },
+                    {
+                      "name": "series",
+                      "expression": "`series`"
+                    },
+                    {
+                      "name": "total_amount",
+                      "expression": "`total_amount`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "frame": {
+                "showTitle": true,
+                "title": "Spend by customer type (£)"
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "CUSTOMER_TYPE",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Customer type"
+                },
+                "y": {
+                  "fieldName": "total_amount",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Spend (£)"
+                },
+                "color": {
+                  "fieldName": "series",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "Spend (£)",
+                        "color": "#FF6600"
+                      }
+                    ]
+                  },
+                  "displayName": ""
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 33,
+            "width": 3,
+            "height": 6
+          }
+        }
+      ]
+    },
+    {
+      "name": "page_quality",
+      "displayName": "Data Quality & Operations",
+      "layout": [
+        {
+          "widget": {
+            "name": "w_quarantined",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_quarantine",
+                  "fields": [
+                    {
+                      "name": "quarantined_rows",
+                      "expression": "`quarantined_rows`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "frame": {
+                "showTitle": true,
+                "title": "Quarantined rows (all time)"
+              },
+              "encodings": {
+                "value": {
+                  "fieldName": "quarantined_rows",
+                  "displayName": "Quarantined rows (all time)"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "w_dq_issues",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_dq_issues",
+                  "fields": [
+                    {
+                      "name": "issue",
+                      "expression": "`issue`"
+                    },
+                    {
+                      "name": "severity",
+                      "expression": "`severity`"
+                    },
+                    {
+                      "name": "cnt",
+                      "expression": "`cnt`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "frame": {
+                "showTitle": true,
+                "title": "Data-quality issues by type"
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "issue",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Issue"
+                },
+                "y": {
+                  "fieldName": "cnt",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Rows"
+                },
+                "color": {
+                  "fieldName": "severity",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "warning",
+                        "color": "#FF6600"
+                      },
+                      {
+                        "value": "quarantined",
+                        "color": "#CF2E2E"
+                      }
+                    ]
+                  },
+                  "displayName": ""
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 0,
+            "width": 4,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "w_run_log",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ds_run_log",
+                  "fields": [
+                    {
+                      "name": "run_ts",
+                      "expression": "`run_ts`"
+                    },
+                    {
+                      "name": "stage",
+                      "expression": "`stage`"
+                    },
+                    {
+                      "name": "file_date",
+                      "expression": "`file_date`"
+                    },
+                    {
+                      "name": "rows_in",
+                      "expression": "`rows_in`"
+                    },
+                    {
+                      "name": "rows_out",
+                      "expression": "`rows_out`"
+                    },
+                    {
+                      "name": "rows_quarantined",
+                      "expression": "`rows_quarantined`"
+                    },
+                    {
+                      "name": "notes",
+                      "expression": "`notes`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "frame": {
+                "showTitle": true,
+                "title": "Pipeline run log"
+              },
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "run_ts",
+                    "displayName": "Run (UTC)"
+                  },
+                  {
+                    "fieldName": "stage",
+                    "displayName": "Stage"
+                  },
+                  {
+                    "fieldName": "file_date",
+                    "displayName": "File date"
+                  },
+                  {
+                    "fieldName": "rows_in",
+                    "displayName": "Rows in"
+                  },
+                  {
+                    "fieldName": "rows_out",
+                    "displayName": "Rows out"
+                  },
+                  {
+                    "fieldName": "rows_quarantined",
+                    "displayName": "Quarantined"
+                  },
+                  {
+                    "fieldName": "notes",
+                    "displayName": "Notes"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 6,
+            "height": 6
+          }
+        }
+      ]
+    }
+  ]
+}

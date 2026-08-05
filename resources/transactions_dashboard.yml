@@ -1,0 +1,7 @@
+# The analytics dashboard, deployed as code from dashboards/*.lvdash.json.
+resources:
+  dashboards:
+    transactions_dashboard:
+      display_name: "Transaction Analytics"
+      file_path: ../dashboards/transactions.lvdash.json
+      warehouse_id: ${var.warehouse_id}
