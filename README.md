@@ -138,7 +138,7 @@ The dashboard deploys as a draft named "Transaction Analytics"; open it under
 Dashboard conventions:
 - Insight style and metrics follow Fable Data's published analyses (share of
   spend, monthly YoY comparison, average transaction value, spend per
-  customer, weekday patterns, age-band splits), using their brand palette
+  customer, weekday patterns, age-band splits), using brand palette
   (orange #FF6600 accent; the secondary blue is brightened to #4E8FD1 to pass
   contrast checks on dark backgrounds).
 - Invalid age bands (`30-30`, `150-59`, `140-49`) are **excluded from the
