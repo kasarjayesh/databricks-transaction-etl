@@ -48,8 +48,9 @@ Python UDFs: every rule is a native Spark column expression.
 ├── src/transaction_etl/        # schema, transforms, quality, audit (unit-tested)
 ├── tests/                      # pytest suite (runs locally, no cloud needed)
 ├── dashboards/                 # Lakeview dashboard as code (.lvdash.json)
+├── scripts/                    # profile_source.py: profile a file before changing rules
 ├── data/                       # sample input file (100,001 rows)
-└── docs/screenshots/           # dashboard & job screenshots
+└── docs/screenshots/           # dashboard screenshots
 ```
 
 ## Field mapping and assumptions
